@@ -1,0 +1,219 @@
+---
+title: "Milestone 1 report"
+subtitle: "SQL for Data Science Capstone Project"
+author: |
+  | Justas Mundeikis
+  | mundeikis@gmx.de
+date: today
+date-format: iso
+editor: source 
+editor_options:
+  chunk_output_type: console
+format: 
+  pdf: 
+    documentclass: scrartcl 
+    papersize: A4 
+    #pdf-engine: pdflatex 
+    number-sections: true 
+    toc: true
+    #lof: true
+    #lot: true
+    toc-title: "Contents" 
+    toc-depth: 3 
+    geometry: 
+    - top=20mm 
+    - bottom=30mm 
+    - left=30mm 
+    - right=20mm 
+    - heightrounded 
+    #fontfamily: libertinus 
+    colorlinks: true 
+    #bibliography: SADM.bib 
+    #csl: apa.csl 
+    #cite-method: natbib 
+    #biblio-title: "Literatūros sąrašas" 
+    keep-tex: false
+    keep-md: false
+    fig-width: 8
+    fig-height: 4
+    fig-pos: "H"
+    highlight-style: monokai
+---
+\newpage
+# Step 1: Preparing for Your Proposal
+
+**Which client/dataset did you select and why?**
+
+I decided to go with the Olympics Dataset, as I am interested in how did my country men perform in the past compared to other nations representatives. Especially I am interested in analysing the basketball players data on they physique.
+
+**Describe the steps you took to import and clean the data.**
+
+First I load all required libraries in R (using RStudio)
+
+```{r, message=FALSE, warning=FALSE, error=FALSE}
+## loading libraries requiered
+library(tidyverse)
+library(RSQLite)
+library(DBI)
+```
+
+I have downloaded the data as .csv files and put in my working directory, in a sub directory "data". Then I read in the .csv files as dataframes:
+
+```{r, message=FALSE, warning=FALSE, error=FALSE}
+## reading in files
+athlete_events <- read_csv(file = "data/athlete_events.csv")
+noc_regions <- read_csv(file = "data/noc_regions.csv")
+```
+
+Then using R I have created a temporal local SQLite database. 
+
+```{r, message=FALSE, warning=FALSE, error=FALSE}
+## creating a SQLite db in memory
+con <- dbConnect(RSQLite::SQLite(),":memory:")
+```
+
+Then I have saved the dataframe as a SQLite DB
+
+```{r, message=FALSE, warning=FALSE, error=TRUE}
+## deleting if exists
+dbRemoveTable(con, "athlete_events")
+dbRemoveTable(con, "noc_regions")
+```
+```{r, message=FALSE, warning=FALSE, error=FALSE}
+## saving the dataframe as table
+dbWriteTable(con, "athlete_events", athlete_events, overwrite=TRUE)
+dbWriteTable(con, "noc_regions", noc_regions, overwrite=TRUE)
+```
+
+I can verify that tables exists with:
+
+```{r, message=FALSE, warning=FALSE, error=FALSE}
+## saving the dataframe as table
+## dbReadTable(con, "athlete_events")
+```
+
+I can list columns:
+
+```{r, message=FALSE, warning=FALSE, error=FALSE}
+## list name of columns
+dbListFields(con, "athlete_events")
+```
+and in coc_regions table:
+
+```{r, message=FALSE, warning=FALSE, error=FALSE}
+## list name of columns
+dbListFields(con, "noc_regions")
+```
+
+Now we can write SQL queries:
+
+```{r, message=FALSE, warning=FALSE, error=FALSE}
+## list name of columns
+dbGetQuery(con, 
+"select * 
+from athlete_events
+limit 5")
+```
+
+```{r, message=FALSE, warning=FALSE, error=FALSE}
+## list name of columns
+dbGetQuery(con, 
+"select * 
+from noc_regions
+limit 5")
+```
+
+**ERD looks like**
+
+![Entity Relationship Diagram (ERD)](figures/erd.png)
+
+# Exploratory data analysis
+
+Most medals are bronze
+
+```{r, message=FALSE, warning=FALSE, error=FALSE}
+dbGetQuery(con, 
+"select * 
+from athlete_events")|>
+  filter(Team=="Lithuania")|>
+  count(Medal)|>
+  na.omit()|>
+  ggplot(aes(Medal, n))+
+  geom_col()+
+  labs(title="Lithuania total medals won",
+       x="Medal type",
+       y="Count")
+
+```
+
+Most medals were won in 1922-2000 period
+
+```{r, message=FALSE, warning=FALSE, error=FALSE}
+dbGetQuery(con, 
+"select * 
+from athlete_events")|>
+  filter(Team=="Lithuania")%>%
+  select(Year, Medal)%>%
+  na.omit() %>%
+  count(Year, Medal)%>%
+  ggplot(aes(Year, n, fill=Medal))+
+  geom_col(position = "stack")+
+  scale_x_continuous(breaks = seq(0,3000, by=4))+
+  theme_bw()+
+  theme(legend.position = "bottom")+
+  labs(title="Lithuania total medals won by year",
+       x="Year",
+       y="Count",
+       fill="Medal type")
+
+```
+
+It appears Lithuania has gathered many medals in basketball in 1992,996,2000
+
+```{r, message=FALSE, warning=FALSE, error=FALSE}
+dbGetQuery(con, 
+"select * 
+from athlete_events")|>
+  filter(Team=="Lithuania")%>%
+  select(Year, Medal, Sport)%>%
+  na.omit() %>%
+  count(Year, Sport)%>%
+  ggplot(aes(Year, n, fill=Sport))+
+  geom_col(position = "stack")+
+  scale_x_continuous(breaks = seq(0,3000, by=4))+
+  theme_bw()+
+  theme(legend.position = "bottom")+
+  labs(title="Lithuania total medals won by sports",
+       x="Year",
+       y="Count",
+       fill="Sport")
+
+```
+
+\newpage
+# Step 2: Develop Project Proposal
+
+## Description
+
+My target audiance is the international sports community. I will report and comapare Lithuanian Olympics perfamnce with other countries. The goal of this analysis is to investigate the basketball players performance with regard to their country of origin and their physique towards winning medals in Olympic games. Further its of interest to my audiance is the change of players physique over time.
+
+## Questions
+
+-   Did lithuanian baskettball players experiences a change in physique over time?
+-   Did they become oler/younger over time? Heavier/ lighter?
+-   Did more taller players came to pay at olympics?
+-   How did they compare to other nations: USA?
+
+## Hypothesis
+
+-   Hypothesis average heigt **did not change** among lithuanian players at olypmics in period 1992 vs 2016
+-   Hypothesis average weight **did not change** among lithuanian players at olypmics in period 1992 vs 2016
+-   Hypothesis average weight **increased** among lithuanian players at olypmics in period 1992 vs 2016
+-   LTU players compared to USA players during all periods (1992-2016 combined) were significalty lower
+-   LTU players compared to USA players during all periods (1992-2016 combined) were significalty heavier
+-   LTU players compared to USA players during all periods (1992-2016 combined) were significalty older
+
+## Approach
+
+-   I will use the Name, Sex, Age, Height, Team, Year columns for this analysis.
+-   I will use stuent-t statiscis to analyse the difference in means, as the variable sof interest are numeric.

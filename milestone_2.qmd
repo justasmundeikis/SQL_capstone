@@ -1,0 +1,219 @@
+---
+title: "Milestone 2 report"
+subtitle: "SQL for Data Science Capstone Project"
+author: |
+  | Justas Mundeikis
+  | mundeikis@gmx.de
+date: today
+date-format: iso
+editor: source 
+editor_options:
+  chunk_output_type: console
+format: 
+  pdf: 
+    documentclass: scrartcl 
+    papersize: A4 
+    #pdf-engine: pdflatex 
+    number-sections: true 
+    toc: true
+    #lof: true
+    #lot: true
+    toc-title: "Contents" 
+    toc-depth: 3 
+    geometry: 
+    - top=20mm 
+    - bottom=30mm 
+    - left=30mm 
+    - right=20mm 
+    - heightrounded 
+    #fontfamily: libertinus 
+    colorlinks: true 
+    #bibliography: SADM.bib 
+    #csl: apa.csl 
+    #cite-method: natbib 
+    #biblio-title: "Literatūros sąrašas" 
+    keep-tex: false
+    keep-md: false
+    fig-width: 8
+    fig-height: 4
+    fig-pos: "H"
+    highlight-style: monokai
+---
+\newpage
+# Preparation
+
+First I load all required libraries in R (using RStudio)
+
+```{r, message=FALSE, warning=FALSE, error=FALSE}
+## loading libraries requiered
+library(tidyverse)
+library(gt)
+library(RSQLite)
+library(DBI)
+```
+
+I have downloaded the data as .csv files and put in my working directory, in a sub directory "data". Then I read in the .csv files as dataframes:
+
+```{r, message=FALSE, warning=FALSE, error=FALSE}
+## reading in files
+athlete_events <- read_csv(file = "data/athlete_events.csv")
+noc_regions <- read_csv(file = "data/noc_regions.csv")
+```
+
+Then using R I have create a temporal local SQLite database. 
+
+```{r, message=FALSE, warning=FALSE, error=FALSE}
+## creating a SQLite db in memory
+con <- dbConnect(RSQLite::SQLite(),":memory:")
+```
+
+Then I save the dataframes as a SQLite DBs:
+
+```{r, message=FALSE, warning=FALSE, error=FALSE}
+## saving the dataframe as table
+dbWriteTable(con, "athlete_events", athlete_events, overwrite=TRUE)
+dbWriteTable(con, "noc_regions", noc_regions, overwrite=TRUE)
+```
+
+# Hypotheses
+
+I have raised following hypotheses:
+
+## Hypothesis
+
+-   Hypothesis average height **did not change** among Lithuanian players at Olympics in period 1992 vs 2016 due to self selection bias in this sports
+-   Hypothesis average weight **did not change** among Lithuanian players at Olympics in period 1992 vs 2016 as players have to stay fit
+-   Hypothesis average age  **increased** among Lithuanian players at Olympics in period 1992 vs 2016 as the same players often returned to the Olympic games multiple times
+
+
+\newpage
+### Average height of Lithuanian basketball players has not changed in period 1992 vs 2016
+
+The Boxplot diagram shows that the median has slightly increased over time, while the variation has decreased when comparing to 1996-2004 era.
+
+```{r, message=FALSE, warning=FALSE, error=FALSE}
+dbGetQuery(con, 
+"select Year, Height
+from athlete_events
+where Team='Lithuania' 
+AND Sport=='Basketball'
+")|>
+  ggplot(aes(as.factor(Year), Height))+
+  geom_boxplot()+
+  geom_point(col="steelblue")+
+    labs(title="Lithuanian basketball players' heigt over time",
+       x="Medal type",
+       y="Height, in cm")
+```
+
+
+Summary statistics table:
+
+```{r, message=FALSE, warning=FALSE, error=FALSE}
+dbGetQuery(con, 
+"select Year, Height
+from athlete_events
+where Team='Lithuania' 
+AND Sport=='Basketball'
+")|>
+  group_by(Year)|>
+  summarise(avg_height=mean(Height),
+            sd_height=sd(Height),
+            median_height=median(Height))|>
+  gt()|>
+  tab_header(
+    title = "Summary statistics",
+    subtitle = "Lithuanian Basketball players"
+  )|>
+  fmt_number(columns = ends_with("height"), decimals = 1)
+```
+
+This data may suggest, that the hypothesis will be rejected.
+
+\newpage
+### Average weight of Lithuanian basketball players has not changed in period 1992 vs 2016
+
+The Boxplot diagram shows that the median weight has slightly increased over time, while the variation has remain approximately the same over time.
+
+```{r, message=FALSE, warning=FALSE, error=FALSE}
+dbGetQuery(con, 
+"select Year, Weight
+from athlete_events
+where Team='Lithuania' 
+AND Sport=='Basketball'
+")|>
+  ggplot(aes(as.factor(Year), Weight))+
+  geom_boxplot()+
+  geom_point(col="steelblue")+
+    labs(title="Lithuanian basketball players' heigt over time",
+       x="Medal type",
+       y="Weight, in kg")
+```
+
+
+Summary statistics table:
+
+```{r, message=FALSE, warning=FALSE, error=FALSE}
+dbGetQuery(con, 
+"select Year, Weight
+from athlete_events
+where Team='Lithuania' 
+AND Sport=='Basketball'
+")|>
+  group_by(Year)|>
+  summarise(avg_weight=mean(Weight),
+            sd_weight=sd(Weight),
+            median_weight=median(Weight))|>
+  gt()|>
+  tab_header(
+    title = "Summary statistics",
+    subtitle = "Lithuanian Basketball players"
+  )|>
+  fmt_number(columns = ends_with("weight"), decimals = 1)
+```
+
+This data may suggest, that the hypothesis will be confirmed
+
+\newpage
+### Average age of Lithuanian basketball players has not changed in period 1992 vs 2016
+
+The Box plot diagram shows that in 1922 there was the largest variation in data, then in 1996 the median age dropped and every games past that more or less the same players returned to Olympics, the median age increased.  In 2016, although completely different players were playing, the median variation appears to be very similar to 1996
+
+```{r, message=FALSE, warning=FALSE, error=FALSE}
+dbGetQuery(con, 
+"select Year, Age
+from athlete_events
+where Team='Lithuania' 
+AND Sport=='Basketball'
+")|>
+  ggplot(aes(as.factor(Year), Age))+
+  geom_boxplot()+
+  geom_point(col="steelblue")+
+    labs(title="Lithuanian basketball players' heigt over time",
+       x="Medal type",
+       y="Age, years")
+```
+
+http://127.0.0.1:17887/graphics/6feafc30-bff8-4fab-8f0e-0adc76bb09ed.png
+Summary statistics table:
+
+```{r, message=FALSE, warning=FALSE, error=FALSE}
+dbGetQuery(con, 
+"select Year, Weight
+from athlete_events
+where Team='Lithuania' 
+AND Sport=='Basketball'
+")|>
+  group_by(Year)|>
+  summarise(avg_weight=mean(Weight),
+            sd_weight=sd(Weight),
+            median_weight=median(Weight))|>
+  gt()|>
+  tab_header(
+    title = "Summary statistics",
+    subtitle = "Lithuanian Basketball players"
+  )|>
+  fmt_number(columns = ends_with("weight"), decimals = 1)
+```
+
+This data may suggest, that the hypothesis will be rejected, but if the comaprisan was drawn from 1996 and not 1992 as base year, the hypothesis might be confirmed.
