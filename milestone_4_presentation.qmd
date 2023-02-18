@@ -1,0 +1,238 @@
+---
+title: "SQL for Data Science Capstone Project"
+author: "Justas Mundeikis"
+format: revealjs
+editor: visual
+---
+
+# Data
+
+```{r, message=FALSE, warning=FALSE, error=FALSE, echo=FALSE}
+## loading libraries requiered
+library(tidyverse)
+library(gt)
+library(RSQLite)
+library(DBI)
+library(broom)
+library(gtsummary)
+## reading in files
+athlete_events <- read_csv(file = "data/athlete_events.csv")
+noc_regions <- read_csv(file = "data/noc_regions.csv")
+## creating a SQLite db in memory
+con <- dbConnect(RSQLite::SQLite(),":memory:")
+## saving the dataframe as table
+dbWriteTable(con, "athlete_events", athlete_events, overwrite=TRUE)
+dbWriteTable(con, "noc_regions", noc_regions, overwrite=TRUE)
+```
+
+This analysis is based on Olympic sports data ranging from 1896 to 2016. With over 66 different sport disciplines.
+
+## Audiance
+
+The audience of this report are Lithuanian basketball strategist, who are interested in knowing, if Lithuanian national basketball team is becoming "older", "lower" and "older"? As some players return every 4 years to play again for their country. They want to know, if the competitiveness of the national team might decrease due to players physique.
+
+## Hypotheses
+
+I have raised following hypotheses:
+
+1. Hypothesis average height **decreased** among Lithuanian players at Olympics in period 1992 vs 2016
+2. Hypothesis average weight **increased** among Lithuanian players at Olympics in period 1992 vs 2016
+3. Hypothesis average age  **increased** among Lithuanian players at Olympics in period 1992 vs 2016
+
+## Previous research
+
+Exploratory data analysis can be found in [my GitHub repository](https://github.com/justasmundeikis/SQL_capstone)
+
+
+## H1 Height
+
+1. Hypothesis average height **decreased** among Lithuanian players at Olympics in period 1992 vs 2016
+
+The Box plot diagram shows that the median has slightly increased over time, while the variation has decreased when comparing to 1996-2004 era.
+
+## H1 Height
+
+```{r, message=FALSE, warning=FALSE, error=FALSE, echo=FALSE}
+dbGetQuery(con, 
+"select Year, Height
+from athlete_events
+where Team='Lithuania' 
+AND Sport=='Basketball'
+")|>
+  ggplot(aes(as.factor(Year), Height))+
+  geom_boxplot()+
+  geom_point(col="steelblue")+
+    labs(title="Lithuanian basketball players' heigt over time",
+       x="Medal type",
+       y="Height, in cm")
+```
+
+
+## H1 Height
+
+Summary statistics table:
+
+```{r, message=FALSE, warning=FALSE, error=FALSE, echo=FALSE}
+dbGetQuery(con, 
+"select Year, Height
+from athlete_events
+where Team='Lithuania' 
+AND Sport=='Basketball'
+")|>
+  group_by(Year)|>
+  summarise(avg_height=mean(Height),
+            sd_height=sd(Height),
+            median_height=median(Height))|>
+  gt()|>
+  tab_header(
+    title = "Summary statistics",
+    subtitle = "Lithuanian Basketball players"
+  )|>
+  fmt_number(columns = ends_with("height"), decimals = 1)
+```
+
+This data may suggest, that the hypothesis will be rejected.
+
+## H2 Weight
+
+2. Hypothesis average weight **increased** among Lithuanian players at Olympics in period 1992 vs 2016
+
+
+The Boxplot diagram shows that the median weight has slightly increased over time, while the variation has remain approximately the same over time.
+
+## H2 Weight
+
+```{r, message=FALSE, warning=FALSE, error=FALSE, echo=FALSE}
+dbGetQuery(con, 
+"select Year, Weight
+from athlete_events
+where Team='Lithuania' 
+AND Sport=='Basketball'
+")|>
+  ggplot(aes(as.factor(Year), Weight))+
+  geom_boxplot()+
+  geom_point(col="steelblue")+
+    labs(title="Lithuanian basketball players' heigt over time",
+       x="Medal type",
+       y="Weight, in kg")
+```
+
+## H2 Weight
+
+Summary statistics table:
+
+```{r, message=FALSE, warning=FALSE, error=FALSE, echo=FALSE}
+dbGetQuery(con, 
+"select Year, Weight
+from athlete_events
+where Team='Lithuania' 
+AND Sport=='Basketball'
+")|>
+  group_by(Year)|>
+  summarise(avg_weight=mean(Weight),
+            sd_weight=sd(Weight),
+            median_weight=median(Weight))|>
+  gt()|>
+  tab_header(
+    title = "Summary statistics",
+    subtitle = "Lithuanian Basketball players"
+  )|>
+  fmt_number(columns = ends_with("weight"), decimals = 1)
+```
+
+This data may suggest, that the hypothesis will be confirmed
+
+## H3 Age
+
+3. Hypothesis average age  **increased** among Lithuanian players at Olympics in period 1992 vs 2016
+
+The Box plot diagram shows that in 1922 there was the largest variation in data, then in 1996 the median age dropped and every games past that more or less the same players returned to Olympics, the median age increased.  In 2016, although completely different players were playing, the median variation appears to be very similar to 1996
+
+## H3 Age
+
+```{r, message=FALSE, warning=FALSE, error=FALSE, echo=FALSE}
+dbGetQuery(con, 
+"select Year, Age
+from athlete_events
+where Team='Lithuania' 
+AND Sport=='Basketball'
+")|>
+  ggplot(aes(as.factor(Year), Age))+
+  geom_boxplot()+
+  geom_point(col="steelblue")+
+    labs(title="Lithuanian basketball players' heigt over time",
+       x="Medal type",
+       y="Age, years")
+```
+
+## H3 Age
+
+```{r, message=FALSE, warning=FALSE, error=FALSE, echo=FALSE}
+dbGetQuery(con, 
+"select Year, Weight
+from athlete_events
+where Team='Lithuania' 
+AND Sport=='Basketball'
+")|>
+  group_by(Year)|>
+  summarise(avg_weight=mean(Weight),
+            sd_weight=sd(Weight),
+            median_weight=median(Weight))|>
+  gt()|>
+  tab_header(
+    title = "Summary statistics",
+    subtitle = "Lithuanian Basketball players"
+  )|>
+  fmt_number(columns = ends_with("weight"), decimals = 1)
+```
+
+## Hypotheses testing
+
+Despite exploratory data analysis showing some relative increases in basketball players physique - none of it appears to be significant
+
+```{r, message=FALSE, warning=FALSE, error=FALSE, echo=FALSE}
+dbGetQuery(con, 
+"select 
+ Year 
+,Height
+,Weight
+,Age
+from athlete_events
+where Team='Lithuania' 
+AND Sport=='Basketball'
+AND Year in (1992, 2016)
+")|>
+  gather(variable, values, 2:4)|>
+  group_by(variable)|>
+      do(tidy(with(data = ., t.test(values[Year == "1992"], values[Year == "2016"]))))|>
+    select(variable,  estimate1, estimate2, p.value)%>%
+    mutate(p.value=round(p.value, 3))|>
+    mutate(rel_change=estimate2/estimate1-1)|>
+    mutate(star = case_when(
+        p.value <= 0.001 ~ "***",
+        p.value <= 0.01 ~ "**",
+        p.value <= 0.05 ~ "*",
+        p.value <= 0.1 ~ ".",
+        TRUE ~ ""
+    ))%>%
+    mutate(p.value=paste(p.value, star))%>%
+    select(-star)|>
+    ungroup()|>
+    relocate(variable, estimate1, estimate2, rel_change, p.value)|>
+    gt()|>
+    tab_header(
+        title = "Lithuanian basketball players metrics 1992 vs 2016",
+        subtitle = "student-t statiscis for height, weight, age"
+    ) |>
+    fmt_number(c(estimate1, estimate2), decimals = 2)|>
+    fmt_percent(rel_change, decimals = 2)|>
+    cols_align(
+        align = "left",
+        columns = p.value
+    )
+```
+
+
+## Conclusions
+
+Lithuanian basketball strategists can be calmed down, despite some players returning to play for their country, the national team does not become older, heavier and does not loose height. Thus competitiveness of national team will depend on skills and not on physique.

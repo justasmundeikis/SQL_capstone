@@ -1,0 +1,11 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/1004705/c7822dedaf5f4d7c81b7a3d216afdffe
+bundleId: https://api.rpubs.com/api/v1/document/1004705/c7822dedaf5f4d7c81b7a3d216afdffe
+url: http://rpubs.com/justasmundeikis/1004705
+when: 1676723916.95698
+lastSyncTime: 1676723916.95699
