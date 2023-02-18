@@ -217,3 +217,9 @@ AND Sport=='Basketball'
 ```
 
 This data may suggest, that the hypothesis will be rejected, but if the comaprisan was drawn from 1996 and not 1992 as base year, the hypothesis might be confirmed.
+
+## Conclusions
+
+The exploratory data analysis does not allow to confirm or to reject the hypothesis yet. More rigorous statistical tests are needed, that will be completed in milestone 3 part.
+
+Additional questions: it would be interesting to compare the physique metrics of Lithuanian vs. USA players.
