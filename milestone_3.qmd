@@ -223,11 +223,38 @@ AND Sport=='Basketball'
 
 This data may suggest, that the hypothesis will be rejected, but if the comaprisan was drawn from 1996 and not 1992 as base year, the hypothesis might be confirmed.
 
+\newpage
+## Correlational analysis
 
+Now I test time and the metric variables: height, weight age.
+
+```{r, message=FALSE, warning=FALSE, error=FALSE}
+dbGetQuery(con, 
+"select 
+ Year 
+,Height
+,Weight
+,Age
+from athlete_events
+where Team='Lithuania' 
+AND Sport=='Basketball'
+")|> 
+  cor()|> 
+  as.data.frame()|> 
+  rownames_to_column(var = "Variables")|>
+    gt()|>
+    tab_header(
+        title = "Lithuanian basketball players metrics vs time",
+        subtitle = "Correlational analysis"
+    ) |>
+    fmt_number(col=c(Year,Height,Weight,Age), decimals = 2)
+```
+
+Conclusion, year is not correlated with physique of the players.
+
+\newpage
 ## Testing 
-Exploratory data analysis (see [milestone 2 in Github Repo](https://github.com/justasmundeikis/SQL_capstone/blob/main/milestone_2.pdf)) suggested, that there might a a statically significant increase in Age. Height and Weight appeared not to have changed over time.
-
-I tests the hypothesis for differences in means using student-t statistic.
+I test the hypothesis for differences in means using student-t statistic.
 
 The data does not allow to reject the H0 hypothesis at $\alpha=0.05$ level. Although all variables show relative increase, none of the changes in averages is statically significant.
 
